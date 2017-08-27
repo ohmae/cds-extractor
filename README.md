@@ -1,5 +1,6 @@
 # CdsExtractor
-[![license](https://img.shields.io/github/license/mashape/apistatus.svg)](./LICENSE)
+[![license](https://img.shields.io/github/license/ohmae/CdsExtractor.svg)](./LICENSE)
+[![GitHub release](https://img.shields.io/github/release/ohmae/CdsExtractor.svg)](https://github.com/ohmae/CdsExtractor/releases)
 
 This is a test tool for dmp.
 
