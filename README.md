@@ -1,4 +1,6 @@
 # CdsExtractor
+[![license](https://img.shields.io/github/license/mashape/apistatus.svg)](./LICENSE)
+
 This is a test tool for dmp.
 
 ## Author
