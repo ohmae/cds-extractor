@@ -26,9 +26,10 @@ import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -75,6 +76,7 @@ public class MainWindow extends JFrame {
     private Thread mThread;
     private boolean mLoading;
     private boolean mCancel;
+    private final Set<String> mZipEntrySet = new HashSet<>();
 
     private MainWindow() {
         setTitle("CDS Extractor");
@@ -181,6 +183,7 @@ public class MainWindow extends JFrame {
         mText.setBackground(Color.YELLOW);
         mTree.setEnabled(false);
         new Thread(() -> {
+            mZipEntrySet.clear();
             final File fineName = new File(mCurrentDirectory, toFileNameString(server.getFriendlyName()) + ".zip");
             try (final ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(fineName))) {
                 saveDescription(zos, server);
@@ -188,6 +191,7 @@ public class MainWindow extends JFrame {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+            mZipEntrySet.clear();
             mText.setBackground(Color.WHITE);
             mText.setText("完了");
             mButton.setText("保存");
@@ -232,13 +236,30 @@ public class MainWindow extends JFrame {
     }
 
     @Nonnull
-    private String makePath(String base, String name) throws UnsupportedEncodingException {
-        return base + "/" + toFileNameString(name) + ".xml";
+    private String makePath(String base, String name) throws IOException {
+        return makeUniquePath(base + "/" + toFileNameString(name), ".xml");
     }
 
     @Nonnull
-    private String makePath(String base, String name, String postfix) throws UnsupportedEncodingException {
-        return base + "/" + toFileNameString(name) + postfix + ".xml";
+    private String makePath(String base, String name, String suffix) throws IOException {
+        return makeUniquePath(base + "/" + toFileNameString(name),suffix +".xml");
+    }
+
+    @Nonnull
+    private String makeUniquePath(String body, String suffix) throws IOException {
+        String path = body + suffix;
+        if (!mZipEntrySet.contains(path)) {
+            mZipEntrySet.add(path);
+            return path;
+        }
+        for(int i = 0; i < Integer.MAX_VALUE; i++) {
+            path = body + "$$" + i + suffix;
+            if (!mZipEntrySet.contains(path)) {
+                mZipEntrySet.add(path);
+                return path;
+            }
+        }
+        throw new IOException();
     }
 
     private void writeZipEntry(ZipOutputStream zos, String path, String data) throws IOException {
