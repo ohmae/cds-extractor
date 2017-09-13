@@ -181,7 +181,7 @@ public class MainWindow extends JFrame {
         mText.setBackground(Color.YELLOW);
         mTree.setEnabled(false);
         new Thread(() -> {
-            final File fineName = new File(mCurrentDirectory, server.getFriendlyName() + ".zip");
+            final File fineName = new File(mCurrentDirectory, toFileNameString(server.getFriendlyName()) + ".zip");
             try (final ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(fineName))) {
                 saveDescription(zos, server);
                 dumpAllDir(zos, server);
