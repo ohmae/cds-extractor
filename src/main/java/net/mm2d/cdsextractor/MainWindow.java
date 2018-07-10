@@ -13,9 +13,9 @@ import net.mm2d.android.upnp.cds.Description;
 import net.mm2d.android.upnp.cds.MediaServer;
 import net.mm2d.android.upnp.cds.MsControlPoint;
 import net.mm2d.android.upnp.cds.MsControlPoint.MsDiscoveryListener;
+import net.mm2d.log.Log;
 import net.mm2d.upnp.Device;
 import net.mm2d.upnp.Service;
-import net.mm2d.util.Log;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -56,13 +56,13 @@ public class MainWindow extends JFrame {
     private static final String TAG = "MainWindow";
 
     public static void main(String[] args) {
+        Log.initialize(false);
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException
                 | UnsupportedLookAndFeelException e) {
             Log.w(TAG, e);
         }
-        Log.setLogLevel(Log.ASSERT);
         new MainWindow();
     }
 

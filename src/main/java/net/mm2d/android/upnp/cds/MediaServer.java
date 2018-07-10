@@ -8,10 +8,10 @@
 package net.mm2d.android.upnp.cds;
 
 import net.mm2d.android.upnp.DeviceWrapper;
+import net.mm2d.log.Log;
 import net.mm2d.upnp.Action;
 import net.mm2d.upnp.Device;
 import net.mm2d.upnp.Service;
-import net.mm2d.util.Log;
 import net.mm2d.util.TextParseUtils;
 
 import java.io.IOException;

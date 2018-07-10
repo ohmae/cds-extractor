@@ -7,7 +7,7 @@
 
 package net.mm2d.android.upnp.cds;
 
-import net.mm2d.util.Log;
+import net.mm2d.log.Log;
 import net.mm2d.util.TextUtils;
 import net.mm2d.util.XmlUtils;
 
