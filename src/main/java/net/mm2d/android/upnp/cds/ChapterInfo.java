@@ -8,8 +8,8 @@
 package net.mm2d.android.upnp.cds;
 
 import net.mm2d.upnp.HttpClient;
-import net.mm2d.util.TextUtils;
-import net.mm2d.util.XmlUtils;
+import net.mm2d.upnp.util.TextUtils;
+import net.mm2d.upnp.util.XmlUtils;
 
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;

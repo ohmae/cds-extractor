@@ -13,7 +13,8 @@ import net.mm2d.android.upnp.cds.Description;
 import net.mm2d.android.upnp.cds.MediaServer;
 import net.mm2d.android.upnp.cds.MsControlPoint;
 import net.mm2d.android.upnp.cds.MsControlPoint.MsDiscoveryListener;
-import net.mm2d.log.Log;
+import net.mm2d.log.Logger;
+import net.mm2d.log.Senders;
 import net.mm2d.upnp.Device;
 import net.mm2d.upnp.Service;
 
@@ -26,6 +27,7 @@ import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -53,15 +55,14 @@ import javax.swing.tree.TreeSelectionModel;
  * @author <a href="mailto:ryo@mm2d.net">大前良介(OHMAE Ryosuke)</a>
  */
 public class MainWindow extends JFrame {
-    private static final String TAG = "MainWindow";
-
     public static void main(String[] args) {
-        Log.initialize(false);
+        Logger.setLogLevel(Logger.VERBOSE);
+        Logger.setSender(Senders.create());
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException
                 | UnsupportedLookAndFeelException e) {
-            Log.w(TAG, e);
+            Logger.w(e);
         }
         new MainWindow();
     }
@@ -226,7 +227,9 @@ public class MainWindow extends JFrame {
         return null;
     }
 
-    private void saveDescription(ZipOutputStream zos, MediaServer server) throws IOException {
+    private void saveDescription(
+            ZipOutputStream zos,
+            MediaServer server) throws IOException {
         final Device device = server.getDevice();
         final String base = toFileNameString(server.getFriendlyName()) + "/description";
         writeZipEntry(zos, makePath(base, device.getFriendlyName()), device.getDescription());
@@ -236,23 +239,30 @@ public class MainWindow extends JFrame {
     }
 
     @Nonnull
-    private String makePath(String base, String name) throws IOException {
+    private String makePath(
+            String base,
+            String name) throws IOException {
         return makeUniquePath(base + "/" + toFileNameString(name), ".xml");
     }
 
     @Nonnull
-    private String makePath(String base, String name, String suffix) throws IOException {
-        return makeUniquePath(base + "/" + toFileNameString(name),suffix +".xml");
+    private String makePath(
+            String base,
+            String name,
+            String suffix) throws IOException {
+        return makeUniquePath(base + "/" + toFileNameString(name), suffix + ".xml");
     }
 
     @Nonnull
-    private String makeUniquePath(String body, String suffix) throws IOException {
+    private String makeUniquePath(
+            String body,
+            String suffix) throws IOException {
         String path = body + suffix;
         if (!mZipEntrySet.contains(path)) {
             mZipEntrySet.add(path);
             return path;
         }
-        for(int i = 0; i < Integer.MAX_VALUE; i++) {
+        for (int i = 0; i < Integer.MAX_VALUE; i++) {
             path = body + "$$" + i + suffix;
             if (!mZipEntrySet.contains(path)) {
                 mZipEntrySet.add(path);
@@ -262,9 +272,12 @@ public class MainWindow extends JFrame {
         throw new IOException();
     }
 
-    private void writeZipEntry(ZipOutputStream zos, String path, String data) throws IOException {
+    private void writeZipEntry(
+            ZipOutputStream zos,
+            String path,
+            String data) throws IOException {
         zos.putNextEntry(new ZipEntry(path));
-        zos.write(data.getBytes("UTF-8"));
+        zos.write(data.getBytes(StandardCharsets.UTF_8));
         zos.closeEntry();
     }
 
@@ -272,7 +285,9 @@ public class MainWindow extends JFrame {
         return name.replaceAll("[\\\\/:*?\"<>|]", "_");
     }
 
-    private void dumpAllDir(ZipOutputStream zos, MediaServer server) throws IOException {
+    private void dumpAllDir(
+            ZipOutputStream zos,
+            MediaServer server) throws IOException {
         try {
             final String base = toFileNameString(server.getFriendlyName()) + "/cds";
             final LinkedList<String> idList = new LinkedList<>();

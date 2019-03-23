@@ -7,7 +7,7 @@
 
 package net.mm2d.android.upnp.cds;
 
-import net.mm2d.util.TextUtils;
+import net.mm2d.upnp.util.TextUtils;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

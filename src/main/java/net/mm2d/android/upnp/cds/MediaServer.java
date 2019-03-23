@@ -8,11 +8,11 @@
 package net.mm2d.android.upnp.cds;
 
 import net.mm2d.android.upnp.DeviceWrapper;
-import net.mm2d.log.Log;
+import net.mm2d.log.Logger;
 import net.mm2d.upnp.Action;
 import net.mm2d.upnp.Device;
 import net.mm2d.upnp.Service;
-import net.mm2d.util.TextParseUtils;
+import net.mm2d.upnp.util.TextParseUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -29,7 +29,6 @@ import javax.annotation.Nullable;
  * @author <a href="mailto:ryo@mm2d.net">大前良介(OHMAE Ryosuke)</a>
  */
 public class MediaServer extends DeviceWrapper {
-    private static final String TAG = "MediaServer";
     private static final String BROWSE = "Browse";
     private static final String OBJECT_ID = "ObjectID";
     private static final String BROWSE_FLAG = "BrowseFlag";
@@ -75,26 +74,14 @@ public class MediaServer extends DeviceWrapper {
      * CDSサービスを購読する。
      */
     public void subscribe() {
-        new Thread(() -> {
-            try {
-                mCdsService.subscribe(true);
-            } catch (final IOException e) {
-                Log.w(TAG, e);
-            }
-        }).start();
+        mCdsService.subscribe(true, null);
     }
 
     /**
      * CDSサービスの購読を中止する。
      */
     public void unsubscribe() {
-        new Thread(() -> {
-            try {
-                mCdsService.unsubscribe();
-            } catch (final IOException e) {
-                Log.w(TAG, e);
-            }
-        }).start();
+        mCdsService.unsubscribe(null);
     }
 
     private synchronized void execute(@Nonnull Runnable command) {
@@ -246,7 +233,7 @@ public class MediaServer extends DeviceWrapper {
             try {
                 while (!mResult.isCancelled()) {
                     final int count = request > REQUEST_MAX ? REQUEST_MAX : request;
-                    final Map<String, String> res = mBrowse.invoke(setCount(argument, start, count));
+                    final Map<String, String> res = mBrowse.invokeSync(setCount(argument, start, count));
                     final List<CdsObject> result = CdsObjectFactory
                             .parseDirectChildren(mUdn, res.get(RESULT));
                     final int number = TextParseUtils.parseIntSafely(res.get(NUMBER_RETURNED), -1);
@@ -270,7 +257,7 @@ public class MediaServer extends DeviceWrapper {
                     mResult.setProgress(list);
                 }
             } catch (final IOException e) {
-                Log.w(TAG, e);
+                Logger.w(e);
             }
             mResult.set(null);
         }
@@ -337,7 +324,7 @@ public class MediaServer extends DeviceWrapper {
                 return;
             }
             try {
-                final Map<String, String> res = mBrowse.invoke(makeArgument());
+                final Map<String, String> res = mBrowse.invokeSync(makeArgument());
                 final CdsObject result = CdsObjectFactory.parseMetadata(mUdn, res.get(RESULT));
                 final int number = TextParseUtils.parseIntSafely(res.get(NUMBER_RETURNED), -1);
                 final int total = TextParseUtils.parseIntSafely(res.get(TOTAL_MATCHES), -1);
@@ -347,7 +334,7 @@ public class MediaServer extends DeviceWrapper {
                     mResult.set(result);
                 }
             } catch (final IOException e) {
-                Log.w(TAG, e);
+                Logger.w(e);
                 mResult.set(null);
             }
         }
