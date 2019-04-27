@@ -7,7 +7,7 @@
 
 package net.mm2d.android.upnp.cds;
 
-import net.mm2d.upnp.util.TextUtils;
+import net.mm2d.android.upnp.TextUtils;
 
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -786,7 +786,9 @@ public class CdsObject {
      *
      * @param element objectを示すelement
      */
-    CdsObject(@Nonnull String udn, @Nonnull Element element) {
+    CdsObject(
+            @Nonnull String udn,
+            @Nonnull Element element) {
         mUdn = udn;
         mItem = isItem(element.getTagName());
         mTagMap = parseElement(element);
@@ -827,7 +829,9 @@ public class CdsObject {
         return map;
     }
 
-    private static int getType(boolean isItem, String upnpClass) {
+    private static int getType(
+            boolean isItem,
+            String upnpClass) {
         if (!isItem) {
             return TYPE_CONTAINER;
         } else if (upnpClass.startsWith(IMAGE_ITEM)) {
@@ -958,7 +962,9 @@ public class CdsObject {
      * @return 指定された値。見つからない場合はnull
      */
     @Nullable
-    public String getValue(@Nonnull String xpath, int index) {
+    public String getValue(
+            @Nonnull String xpath,
+            int index) {
         return mTagMap.getValue(xpath, index);
     }
 
@@ -974,7 +980,9 @@ public class CdsObject {
      * @see #getValue(String, String, int)
      */
     @Nullable
-    public String getValue(@Nullable String tagName, @Nullable String attrName) {
+    public String getValue(
+            @Nullable String tagName,
+            @Nullable String attrName) {
         return mTagMap.getValue(tagName, attrName);
     }
 
@@ -990,7 +998,10 @@ public class CdsObject {
      * @return 指定された値。見つからない場合はnull
      */
     @Nullable
-    public String getValue(@Nullable String tagName, @Nullable String attrName, int index) {
+    public String getValue(
+            @Nullable String tagName,
+            @Nullable String attrName,
+            int index) {
         return mTagMap.getValue(tagName, attrName, index);
     }
 
@@ -1015,7 +1026,9 @@ public class CdsObject {
      * @return Tagインスタンス、見つからない場合はnull
      */
     @Nullable
-    public Tag getTag(@Nullable String tagName, int index) {
+    public Tag getTag(
+            @Nullable String tagName,
+            int index) {
         return mTagMap.getTag(tagName, index);
     }
 
@@ -1040,7 +1053,9 @@ public class CdsObject {
      * @return 指定された値
      * @see #getValue(String)
      */
-    public int getIntValue(@Nonnull String xpath, int defaultValue) {
+    public int getIntValue(
+            @Nonnull String xpath,
+            int defaultValue) {
         return parseIntSafely(getValue(xpath), defaultValue);
     }
 
@@ -1055,7 +1070,10 @@ public class CdsObject {
      * @return 指定された値
      * @see #getValue(String, int)
      */
-    public int getIntValue(@Nonnull String xpath, int index, int defaultValue) {
+    public int getIntValue(
+            @Nonnull String xpath,
+            int index,
+            int defaultValue) {
         return parseIntSafely(getValue(xpath, index), defaultValue);
     }
 
@@ -1084,7 +1102,9 @@ public class CdsObject {
      * @see #getValue(String, int)
      */
     @Nullable
-    public Date getDateValue(@Nonnull String xpath, int index) {
+    public Date getDateValue(
+            @Nonnull String xpath,
+            int index) {
         return parseDate(getValue(xpath, index));
     }
 
@@ -1095,7 +1115,9 @@ public class CdsObject {
      * @param defaultValue パースできない場合のデフォルト値
      * @return パース結果
      */
-    public static int parseIntSafely(@Nullable String value, int defaultValue) {
+    public static int parseIntSafely(
+            @Nullable String value,
+            int defaultValue) {
         return parseIntSafely(value, 10, defaultValue);
     }
 
@@ -1107,7 +1129,10 @@ public class CdsObject {
      * @param defaultValue パースできない場合のデフォルト値
      * @return パース結果
      */
-    public static int parseIntSafely(@Nullable String value, int radix, int defaultValue) {
+    public static int parseIntSafely(
+            @Nullable String value,
+            int radix,
+            int defaultValue) {
         if (TextUtils.isEmpty(value)) {
             return defaultValue;
         }

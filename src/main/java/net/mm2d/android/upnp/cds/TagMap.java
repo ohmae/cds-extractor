@@ -7,7 +7,7 @@
 
 package net.mm2d.android.upnp.cds;
 
-import net.mm2d.upnp.util.TextUtils;
+import net.mm2d.android.upnp.TextUtils;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -48,7 +48,9 @@ class TagMap {
      * @param name タグ名
      * @param tag  格納するタグ情報
      */
-    void putTag(@Nonnull String name, @Nonnull Tag tag) {
+    void putTag(
+            @Nonnull String name,
+            @Nonnull Tag tag) {
         mMap.computeIfAbsent(name, k -> new ArrayList<>(1)).add(tag);
     }
 
@@ -93,7 +95,9 @@ class TagMap {
      * @return 指定された値。見つからない場合はnull
      */
     @Nullable
-    String getValue(@Nonnull String xpath, int index) {
+    String getValue(
+            @Nonnull String xpath,
+            int index) {
         final int pos = xpath.indexOf('@');
         if (pos < 0) {
             return getValue(xpath, null, index);
@@ -115,7 +119,9 @@ class TagMap {
      * @see #getValue(String, String, int)
      */
     @Nullable
-    String getValue(@Nullable String tagName, @Nullable String attrName) {
+    String getValue(
+            @Nullable String tagName,
+            @Nullable String attrName) {
         return getValue(tagName, attrName, 0);
     }
 
@@ -131,7 +137,10 @@ class TagMap {
      * @return 指定された値。見つからない場合はnull
      */
     @Nullable
-    String getValue(@Nullable String tagName, @Nullable String attrName, int index) {
+    String getValue(
+            @Nullable String tagName,
+            @Nullable String attrName,
+            int index) {
         final Tag tag = getTag(tagName, index);
         if (tag == null) {
             return null;
@@ -163,7 +172,9 @@ class TagMap {
      * @return Tagインスタンス、見つからない場合はnull
      */
     @Nullable
-    Tag getTag(@Nullable String tagName, int index) {
+    Tag getTag(
+            @Nullable String tagName,
+            int index) {
         final List<Tag> list = getTagList(tagName);
         if (list == null || list.size() <= index) {
             return null;

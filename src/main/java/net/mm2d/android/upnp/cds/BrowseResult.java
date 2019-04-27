@@ -124,7 +124,9 @@ public class BrowseResult implements Future<List<CdsObject>> {
 
     @Override
     @Nullable
-    public synchronized List<CdsObject> get(long timeout, @Nonnull TimeUnit unit)
+    public synchronized List<CdsObject> get(
+            long timeout,
+            @Nonnull TimeUnit unit)
             throws InterruptedException, ExecutionException, TimeoutException {
         if (!isDone()) {
             wait(unit.toMillis(timeout));

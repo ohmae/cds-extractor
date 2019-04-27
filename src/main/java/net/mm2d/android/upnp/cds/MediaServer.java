@@ -8,11 +8,11 @@
 package net.mm2d.android.upnp.cds;
 
 import net.mm2d.android.upnp.DeviceWrapper;
+import net.mm2d.android.upnp.TextParseUtils;
 import net.mm2d.log.Logger;
 import net.mm2d.upnp.Action;
 import net.mm2d.upnp.Device;
 import net.mm2d.upnp.Service;
-import net.mm2d.upnp.util.TextParseUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -108,8 +108,10 @@ public class MediaServer extends DeviceWrapper {
      * @return 結果
      */
     @Nonnull
-    public BrowseResult browse(@Nonnull String objectId, @Nullable String filter,
-                               @Nullable String sortCriteria) {
+    public BrowseResult browse(
+            @Nonnull String objectId,
+            @Nullable String filter,
+            @Nullable String sortCriteria) {
         return browse(objectId, filter, sortCriteria, 0, 0);
     }
 
@@ -122,7 +124,10 @@ public class MediaServer extends DeviceWrapper {
      * @return 結果
      */
     @Nonnull
-    public BrowseResult browse(@Nonnull String objectId, int startingIndex, int requestedCount) {
+    public BrowseResult browse(
+            @Nonnull String objectId,
+            int startingIndex,
+            int requestedCount) {
         return browse(objectId, "*", null, startingIndex, requestedCount);
     }
 
@@ -137,9 +142,12 @@ public class MediaServer extends DeviceWrapper {
      * @return 結果
      */
     @Nonnull
-    public BrowseResult browse(@Nonnull String objectId, @Nullable String filter,
-                               @Nullable String sortCriteria,
-                               int startingIndex, int requestedCount) {
+    public BrowseResult browse(
+            @Nonnull String objectId,
+            @Nullable String filter,
+            @Nullable String sortCriteria,
+            int startingIndex,
+            int requestedCount) {
         final BrowseRequest request = new BrowseRequest(objectId, filter, sortCriteria,
                 startingIndex, requestedCount);
         final BrowseResult result = new BrowseResult();
@@ -166,7 +174,9 @@ public class MediaServer extends DeviceWrapper {
      * @return 結果
      */
     @Nonnull
-    public BrowseMetadataResult browseMetadata(@Nonnull String objectId, @Nullable String filter) {
+    public BrowseMetadataResult browseMetadata(
+            @Nonnull String objectId,
+            @Nullable String filter) {
         final BrowseMetadataRequest request = new BrowseMetadataRequest(objectId, filter);
         final BrowseMetadataResult result = new BrowseMetadataResult();
         execute(new BrowseMetadataTask(getUdn(), mBrowse, request, result));
@@ -183,9 +193,12 @@ public class MediaServer extends DeviceWrapper {
         private final int startingIndex;
         private final int requestedCount;
 
-        BrowseRequest(@Nonnull String objectId, @Nullable String filter,
-                      @Nullable String sortCriteria,
-                      int startingIndex, int requestedCount) {
+        BrowseRequest(
+                @Nonnull String objectId,
+                @Nullable String filter,
+                @Nullable String sortCriteria,
+                int startingIndex,
+                int requestedCount) {
             this.objectId = objectId;
             this.filter = filter;
             this.sortCriteria = sortCriteria;
@@ -208,10 +221,11 @@ public class MediaServer extends DeviceWrapper {
         @Nonnull
         private final BrowseResult mResult;
 
-        BrowseTask(@Nonnull final String udn,
-                   @Nonnull final Action browse,
-                   @Nonnull final BrowseRequest request,
-                   @Nonnull final BrowseResult result) {
+        BrowseTask(
+                @Nonnull final String udn,
+                @Nonnull final Action browse,
+                @Nonnull final BrowseRequest request,
+                @Nonnull final BrowseResult result) {
             mUdn = udn;
             mBrowse = browse;
             mRequest = request;
@@ -233,7 +247,7 @@ public class MediaServer extends DeviceWrapper {
             try {
                 while (!mResult.isCancelled()) {
                     final int count = request > REQUEST_MAX ? REQUEST_MAX : request;
-                    final Map<String, String> res = mBrowse.invokeSync(setCount(argument, start, count));
+                    final Map<String, String> res = mBrowse.invokeSync(setCount(argument, start, count), false);
                     final List<CdsObject> result = CdsObjectFactory
                             .parseDirectChildren(mUdn, res.get(RESULT));
                     final int number = TextParseUtils.parseIntSafely(res.get(NUMBER_RETURNED), -1);
@@ -271,7 +285,10 @@ public class MediaServer extends DeviceWrapper {
             return argument;
         }
 
-        private Map<String, String> setCount(Map<String, String> argument, int start, int count) {
+        private Map<String, String> setCount(
+                Map<String, String> argument,
+                int start,
+                int count) {
             argument.put(START_INDEX, String.valueOf(start));
             argument.put(REQUESTED_COUNT, String.valueOf(count));
             return argument;
@@ -287,7 +304,9 @@ public class MediaServer extends DeviceWrapper {
         @Nullable
         private final String filter;
 
-        BrowseMetadataRequest(@Nonnull final String objectId, @Nullable final String filter) {
+        BrowseMetadataRequest(
+                @Nonnull final String objectId,
+                @Nullable final String filter) {
             this.objectId = objectId;
             this.filter = filter;
         }
@@ -306,10 +325,11 @@ public class MediaServer extends DeviceWrapper {
         @Nonnull
         private final BrowseMetadataResult mResult;
 
-        BrowseMetadataTask(@Nonnull final String udn,
-                           @Nonnull final Action browse,
-                           @Nonnull final BrowseMetadataRequest request,
-                           @Nonnull final BrowseMetadataResult result) {
+        BrowseMetadataTask(
+                @Nonnull final String udn,
+                @Nonnull final Action browse,
+                @Nonnull final BrowseMetadataRequest request,
+                @Nonnull final BrowseMetadataResult result) {
             mUdn = udn;
             mBrowse = browse;
             mRequest = request;
@@ -324,7 +344,7 @@ public class MediaServer extends DeviceWrapper {
                 return;
             }
             try {
-                final Map<String, String> res = mBrowse.invokeSync(makeArgument());
+                final Map<String, String> res = mBrowse.invokeSync(makeArgument(), false);
                 final CdsObject result = CdsObjectFactory.parseMetadata(mUdn, res.get(RESULT));
                 final int number = TextParseUtils.parseIntSafely(res.get(NUMBER_RETURNED), -1);
                 final int total = TextParseUtils.parseIntSafely(res.get(TOTAL_MATCHES), -1);

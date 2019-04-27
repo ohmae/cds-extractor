@@ -104,7 +104,9 @@ public class BrowseMetadataResult implements Future<CdsObject> {
 
     @Override
     @Nullable
-    public synchronized CdsObject get(long timeout, @Nonnull TimeUnit unit)
+    public synchronized CdsObject get(
+            long timeout,
+            @Nonnull TimeUnit unit)
             throws InterruptedException, ExecutionException, TimeoutException {
         if (!isDone()) {
             wait(unit.toMillis(timeout));

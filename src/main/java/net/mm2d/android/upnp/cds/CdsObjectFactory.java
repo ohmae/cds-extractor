@@ -7,8 +7,8 @@
 
 package net.mm2d.android.upnp.cds;
 
+import net.mm2d.android.upnp.TextUtils;
 import net.mm2d.log.Logger;
-import net.mm2d.upnp.util.TextUtils;
 import net.mm2d.upnp.util.XmlUtils;
 
 import org.w3c.dom.Document;
@@ -42,7 +42,9 @@ final class CdsObjectFactory {
      * @return パース結果
      */
     @Nonnull
-    static List<CdsObject> parseDirectChildren(@Nonnull final String udn, @Nullable final String xml) {
+    static List<CdsObject> parseDirectChildren(
+            @Nonnull final String udn,
+            @Nullable final String xml) {
         final List<CdsObject> list = new ArrayList<>();
         if (TextUtils.isEmpty(xml)) {
             return list;
@@ -73,7 +75,9 @@ final class CdsObjectFactory {
      * @return パース結果、パースに失敗した場合null
      */
     @Nullable
-    static CdsObject parseMetadata(@Nonnull final String udn, @Nullable final String xml) {
+    static CdsObject parseMetadata(
+            @Nonnull final String udn,
+            @Nullable final String xml) {
         if (TextUtils.isEmpty(xml)) {
             return null;
         }
@@ -100,7 +104,9 @@ final class CdsObjectFactory {
      * @return CdsObjectのインスタンス、パースに失敗した場合null
      */
     @Nullable
-    private static CdsObject createCdsObject(@Nonnull final String udn, @Nonnull final Element element) {
+    private static CdsObject createCdsObject(
+            @Nonnull final String udn,
+            @Nonnull final Element element) {
         try {
             return new CdsObject(udn, element);
         } catch (final IllegalArgumentException e) {

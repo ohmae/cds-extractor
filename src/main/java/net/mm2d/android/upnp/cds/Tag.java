@@ -57,7 +57,9 @@ public class Tag {
      * @param element タグ情報
      * @param root    タグがitem/containerのときtrue
      */
-    Tag(@Nonnull Element element, boolean root) {
+    Tag(
+            @Nonnull Element element,
+            boolean root) {
         this(element, root ? "" : element.getTextContent());
     }
 
@@ -67,7 +69,9 @@ public class Tag {
      * @param element タグ情報
      * @param value   タグの値
      */
-    private Tag(@Nonnull Element element, @Nonnull String value) {
+    private Tag(
+            @Nonnull Element element,
+            @Nonnull String value) {
         mName = element.getTagName();
         mValue = value;
         final NamedNodeMap attributes = element.getAttributes();

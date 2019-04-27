@@ -10,7 +10,6 @@ package net.mm2d.android.upnp;
 import net.mm2d.android.upnp.cds.MsControlPoint;
 import net.mm2d.upnp.ControlPoint;
 import net.mm2d.upnp.ControlPointFactory;
-import net.mm2d.upnp.ControlPointFactory.Params;
 import net.mm2d.upnp.IconFilter;
 
 import java.net.NetworkInterface;
@@ -77,7 +76,7 @@ public class AvControlPointManager {
         if (!mInitialized.get()) {
             throw new IllegalStateException("ControlPoint is not initialized");
         }
-        mControlPoint.search();
+        mControlPoint.search(null);
     }
 
     /**
@@ -106,8 +105,9 @@ public class AvControlPointManager {
             terminate();
         }
         mInitialized.set(true);
-        final Params params = new Params().setInterfaces(interfaces);
-        mControlPoint = ControlPointFactory.create(params);
+        mControlPoint = ControlPointFactory.builder()
+                .setInterfaces(interfaces)
+                .build();
         mControlPoint.setIconFilter(ICON_FILTER);
 
         mMsControlPoint.initialize(mControlPoint);

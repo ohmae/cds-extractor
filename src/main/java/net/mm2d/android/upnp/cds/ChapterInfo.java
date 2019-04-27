@@ -7,8 +7,8 @@
 
 package net.mm2d.android.upnp.cds;
 
+import net.mm2d.android.upnp.TextUtils;
 import net.mm2d.upnp.HttpClient;
-import net.mm2d.upnp.util.TextUtils;
 import net.mm2d.upnp.util.XmlUtils;
 
 import org.w3c.dom.Element;
@@ -38,11 +38,15 @@ public class ChapterInfo {
         void onResult(int[] result);
     }
 
-    public static void get(@Nonnull final CdsObject object, @Nonnull final Callback callback) {
+    public static void get(
+            @Nonnull final CdsObject object,
+            @Nonnull final Callback callback) {
         getSony(object, callback);
     }
 
-    private static boolean getSony(@Nonnull final CdsObject object, @Nonnull final Callback callback) {
+    private static boolean getSony(
+            @Nonnull final CdsObject object,
+            @Nonnull final Callback callback) {
         final String url = object.getValue(SONY_CHAPTER_INFO);
         if (TextUtils.isEmpty(url)) {
             return false;
@@ -51,7 +55,9 @@ public class ChapterInfo {
         return true;
     }
 
-    private static void getSonyInner(@Nonnull final String url, @Nonnull final Callback callback) {
+    private static void getSonyInner(
+            @Nonnull final String url,
+            @Nonnull final Callback callback) {
         try {
             final String xml = new HttpClient(false).downloadString(new URL(url));
             callback.onResult(parseSonyChapterInfo(xml));
@@ -95,7 +101,8 @@ public class ChapterInfo {
 
     @Nullable
     public static Element findChildElementByNodeName(
-            @Nonnull final Node parent, @Nonnull final String nodeName) {
+            @Nonnull final Node parent,
+            @Nonnull final String nodeName) {
         Node child = parent.getFirstChild();
         for (; child != null; child = child.getNextSibling()) {
             if (child.getNodeType() != Node.ELEMENT_NODE) {

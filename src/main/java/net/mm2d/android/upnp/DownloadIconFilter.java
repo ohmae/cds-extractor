@@ -52,7 +52,7 @@ class DownloadIconFilter implements IconFilter {
 
     @Nonnull
     @Override
-    public List<Icon> filter(final @Nonnull List<Icon> list) {
+    public List<Icon> invoke(@Nonnull final List<? extends Icon> list) {
         return Collections.singletonList(Collections.max(list, ICON_COMPARATOR));
     }
 }

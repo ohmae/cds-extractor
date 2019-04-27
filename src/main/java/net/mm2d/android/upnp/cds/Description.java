@@ -7,7 +7,11 @@ public class Description {
     private final int mStart;
     private final int mNumber;
     private final String mXml;
-    Description(int start, int number, String xml) {
+
+    Description(
+            int start,
+            int number,
+            String xml) {
         mStart = start;
         mNumber = number;
         mXml = xml;
