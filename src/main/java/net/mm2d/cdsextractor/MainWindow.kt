@@ -4,322 +4,263 @@
  * This software is released under the MIT License.
  * http://opensource.org/licenses/MIT
  */
-package net.mm2d.cdsextractor;
+package net.mm2d.cdsextractor
 
-import net.mm2d.android.upnp.AvControlPointManager;
-import net.mm2d.android.upnp.cds.BrowseResult;
-import net.mm2d.android.upnp.cds.CdsObject;
-import net.mm2d.android.upnp.cds.Description;
-import net.mm2d.android.upnp.cds.MediaServer;
-import net.mm2d.android.upnp.cds.MsControlPoint;
-import net.mm2d.android.upnp.cds.MsControlPoint.MsDiscoveryListener;
-import net.mm2d.log.Logger;
-import net.mm2d.log.Senders;
-import net.mm2d.upnp.Device;
-import net.mm2d.upnp.Service;
-
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import javax.swing.JButton;
-import javax.swing.JFileChooser;
-import javax.swing.JFrame;
-import javax.swing.JScrollPane;
-import javax.swing.JTextField;
-import javax.swing.JTree;
-import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
-import javax.swing.WindowConstants;
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.TreeSelectionModel;
+import io.reactivex.schedulers.Schedulers
+import net.mm2d.android.upnp.AvControlPointManager
+import net.mm2d.android.upnp.cds.MediaServer
+import net.mm2d.android.upnp.cds.MsControlPoint
+import net.mm2d.android.upnp.cds.MsControlPoint.MsDiscoveryListener
+import net.mm2d.log.Logger
+import net.mm2d.log.Senders
+import java.awt.BorderLayout
+import java.awt.Color
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
+import java.awt.event.WindowAdapter
+import java.awt.event.WindowEvent
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
+import java.nio.charset.StandardCharsets
+import java.util.*
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
+import javax.swing.*
+import javax.swing.tree.DefaultMutableTreeNode
+import javax.swing.tree.DefaultTreeModel
+import javax.swing.tree.TreeSelectionModel
 
 /**
- * @author <a href="mailto:ryo@mm2d.net">大前良介(OHMAE Ryosuke)</a>
+ * @author [大前良介(OHMAE Ryosuke)](mailto:ryo@mm2d.net)
  */
-public class MainWindow extends JFrame {
-    public static void main(String[] args) {
-        Logger.setLogLevel(Logger.VERBOSE);
-        Logger.setSender(Senders.create());
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException
-                | UnsupportedLookAndFeelException e) {
-            Logger.w(e);
+class MainWindow private constructor() : JFrame() {
+    private var currentDirectory: File? = null
+    private lateinit var tree: JTree
+    private lateinit var textField: JTextField
+    private lateinit var button: JButton
+    private lateinit var rootNode: DefaultMutableTreeNode
+    private lateinit var controlPointManager: AvControlPointManager
+    private lateinit var msControlPoint: MsControlPoint
+    private var loading: Boolean = false
+    private var cancel: Boolean = false
+    private val zipEntrySet = HashSet<String>()
+    private val executor: ExecutorService = Executors.newCachedThreadPool()
+
+    private val selectedServer: MediaServer?
+        get() = (tree.lastSelectedPathComponent as? DefaultMutableTreeNode)?.userObject as? MediaServer
+
+    init {
+        title = "CDS Extractor"
+        setSize(300, 500)
+        defaultCloseOperation = WindowConstants.EXIT_ON_CLOSE
+        setUpUi()
+        isVisible = true
+        setUpControlPoint()
+    }
+
+    private fun setUpUi() {
+        rootNode = DefaultMutableTreeNode("Device")
+        tree = JTree(rootNode, true)
+        tree.selectionModel.selectionMode = TreeSelectionModel.SINGLE_TREE_SELECTION
+        val scrollPane = JScrollPane(tree)
+        contentPane.add(scrollPane, BorderLayout.CENTER)
+        tree.addTreeSelectionListener {
+            val server = selectedServer
+            button.isEnabled = server != null
+            textField.text = server?.friendlyName ?: ""
         }
-        new MainWindow();
+        textField = JTextField()
+        textField.horizontalAlignment = JTextField.CENTER
+        textField.background = Color.WHITE
+        contentPane.add(textField, BorderLayout.SOUTH)
+        button = JButton("保存")
+        button.isEnabled = false
+        button.addMouseListener(object : MouseAdapter() {
+            override fun mouseClicked(e: MouseEvent?) {
+                onClick()
+            }
+        })
+        contentPane.add(button, BorderLayout.NORTH)
     }
 
-    private File mCurrentDirectory;
-    private JTree mTree;
-    private JTextField mText;
-    private JButton mButton;
-    private DefaultMutableTreeNode mRootNode;
-    private AvControlPointManager mControlPointManager;
-    private MsControlPoint mMsControlPoint;
-    private Thread mThread;
-    private boolean mLoading;
-    private boolean mCancel;
-    private final Set<String> mZipEntrySet = new HashSet<>();
-
-    private MainWindow() {
-        setTitle("CDS Extractor");
-        setSize(300, 500);
-        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        setUpUi();
-        setVisible(true);
-        setUpControlPoint();
-    }
-
-    private void setUpControlPoint() {
-        mControlPointManager = new AvControlPointManager();
-        mMsControlPoint = mControlPointManager.getMsControlPoint();
-        mMsControlPoint.setMsDiscoveryListener(new MsDiscoveryListener() {
-            @Override
-            public void onDiscover(@Nonnull final MediaServer server) {
-                updateTree();
+    private fun setUpControlPoint() {
+        controlPointManager = AvControlPointManager()
+        msControlPoint = controlPointManager.msControlPoint
+        msControlPoint.setMsDiscoveryListener(object : MsDiscoveryListener {
+            override fun onDiscover(server: MediaServer) {
+                updateTree()
             }
 
-            @Override
-            public void onLost(@Nonnull final MediaServer server) {
-                updateTree();
+            override fun onLost(server: MediaServer) {
+                updateTree()
             }
 
-            private void updateTree() {
-                mRootNode.removeAllChildren();
-                List<MediaServer> list = mMsControlPoint.getDeviceList();
-                for (MediaServer server : list) {
-                    DefaultMutableTreeNode node = new DefaultMutableTreeNode(server);
-                    node.setAllowsChildren(false);
-                    mRootNode.add(node);
+            private fun updateTree() {
+                rootNode.removeAllChildren()
+                for (server in msControlPoint.deviceList) {
+                    rootNode.add(DefaultMutableTreeNode(server).also { it.allowsChildren = false })
                 }
-                ((DefaultTreeModel) mTree.getModel()).reload();
+                (tree.model as DefaultTreeModel).reload()
             }
-        });
-        mControlPointManager.initialize();
-        mControlPointManager.start();
-        mThread = new Thread(() -> {
-            try {
-                while (!Thread.interrupted()) {
-                    mControlPointManager.search();
-                    Thread.sleep(3000);
-                }
-            } catch (InterruptedException ignored) {
-            }
-        });
-        mThread.start();
-        addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(final WindowEvent e) {
-                mThread.interrupt();
-                mControlPointManager.stop();
-                mControlPointManager.terminate();
-            }
-        });
-    }
-
-    private void setUpUi() {
-        mRootNode = new DefaultMutableTreeNode("Device");
-        mTree = new JTree(mRootNode, true);
-        mTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
-        final JScrollPane scrollPane = new JScrollPane(mTree);
-        getContentPane().add(scrollPane, BorderLayout.CENTER);
-        mTree.addTreeSelectionListener(e -> {
-            MediaServer server = getSelectedServer();
-            mButton.setEnabled(server != null);
-            if (server != null) {
-                mText.setText(server.getFriendlyName());
-            } else {
-                mText.setText("");
-            }
-        });
-        mText = new JTextField();
-        mText.setHorizontalAlignment(JTextField.CENTER);
-        mText.setBackground(Color.WHITE);
-        getContentPane().add(mText, BorderLayout.SOUTH);
-        mButton = new JButton("保存");
-        mButton.setEnabled(false);
-        mButton.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(final MouseEvent e) {
-                onClick();
-            }
-        });
-        getContentPane().add(mButton, BorderLayout.NORTH);
-    }
-
-    private void onClick() {
-        if (mLoading) {
-            mCancel = true;
-            return;
-        }
-        final MediaServer server = getSelectedServer();
-        if (server == null) {
-            return;
-        }
-        mCurrentDirectory = selectSaveDirectory(server.getFriendlyName());
-        if (mCurrentDirectory == null) {
-            return;
-        }
-        mCancel = false;
-        mLoading = true;
-        mButton.setText("キャンセル");
-        mText.setBackground(Color.YELLOW);
-        mTree.setEnabled(false);
-        new Thread(() -> {
-            mZipEntrySet.clear();
-            final File fineName = new File(mCurrentDirectory, toFileNameString(server.getFriendlyName()) + ".zip");
-            try (final ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(fineName))) {
-                saveDescription(zos, server);
-                dumpAllDir(zos, server);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            mZipEntrySet.clear();
-            mText.setBackground(Color.WHITE);
-            mText.setText("完了");
-            mButton.setText("保存");
-            mTree.setEnabled(true);
-            mLoading = false;
-        }).start();
-    }
-
-    @Nullable
-    private MediaServer getSelectedServer() {
-        final Object selected = mTree.getLastSelectedPathComponent();
-        if (!(selected instanceof DefaultMutableTreeNode)) {
-            return null;
-        }
-        final DefaultMutableTreeNode node = (DefaultMutableTreeNode) selected;
-        final Object object = node.getUserObject();
-        if (!(object instanceof MediaServer)) {
-            return null;
-        }
-        return (MediaServer) object;
-    }
-
-    @Nullable
-    private File selectSaveDirectory(String title) {
-        final JFileChooser chooser = new JFileChooser(mCurrentDirectory);
-        chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-        chooser.setDialogTitle("「" + title + "」の保存先フォルダを選択");
-        final int selected = chooser.showSaveDialog(this);
-        if (selected == JFileChooser.APPROVE_OPTION) {
-            return chooser.getSelectedFile();
-        }
-        return null;
-    }
-
-    private void saveDescription(
-            ZipOutputStream zos,
-            MediaServer server) throws IOException {
-        final Device device = server.getDevice();
-        final String base = toFileNameString(server.getFriendlyName()) + "/description";
-        writeZipEntry(zos, makePath(base, device.getFriendlyName()), device.getDescription());
-        for (Service service : device.getServiceList()) {
-            writeZipEntry(zos, makePath(base, service.getServiceId()), service.getDescription());
-        }
-    }
-
-    @Nonnull
-    private String makePath(
-            String base,
-            String name) throws IOException {
-        return makeUniquePath(base + "/" + toFileNameString(name), ".xml");
-    }
-
-    @Nonnull
-    private String makePath(
-            String base,
-            String name,
-            String suffix) throws IOException {
-        return makeUniquePath(base + "/" + toFileNameString(name), suffix + ".xml");
-    }
-
-    @Nonnull
-    private String makeUniquePath(
-            String body,
-            String suffix) throws IOException {
-        String path = body + suffix;
-        if (!mZipEntrySet.contains(path)) {
-            mZipEntrySet.add(path);
-            return path;
-        }
-        for (int i = 0; i < Integer.MAX_VALUE; i++) {
-            path = body + "$$" + i + suffix;
-            if (!mZipEntrySet.contains(path)) {
-                mZipEntrySet.add(path);
-                return path;
+        })
+        controlPointManager.initialize(emptyList())
+        controlPointManager.start()
+        executor.execute {
+            while (!executor.isShutdown) {
+                controlPointManager.search()
+                Thread.sleep(3000)
             }
         }
-        throw new IOException();
+        addWindowListener(object : WindowAdapter() {
+            override fun windowClosing(e: WindowEvent?) {
+                executor.shutdown()
+                controlPointManager.stop()
+                controlPointManager.terminate()
+            }
+        })
     }
 
-    private void writeZipEntry(
-            ZipOutputStream zos,
-            String path,
-            String data) throws IOException {
-        zos.putNextEntry(new ZipEntry(path));
-        zos.write(data.getBytes(StandardCharsets.UTF_8));
-        zos.closeEntry();
+    private fun onClick() {
+        if (loading) {
+            cancel = true
+            return
+        }
+        val server = selectedServer ?: return
+        currentDirectory = selectSaveDirectory(server.friendlyName)
+        if (currentDirectory == null) {
+            return
+        }
+        cancel = false
+        loading = true
+        button.text = "キャンセル"
+        textField.background = Color.YELLOW
+        tree.isEnabled = false
+        executor.execute {
+            zipEntrySet.clear()
+            val fineName = File(currentDirectory, toFileNameString(server.friendlyName) + ".zip")
+            ZipOutputStream(FileOutputStream(fineName)).use { zos ->
+                saveDescription(zos, server)
+                dumpAllDir(zos, server)
+            }
+            zipEntrySet.clear()
+            textField.background = Color.WHITE
+            textField.text = "完了"
+            button.text = "保存"
+            tree.isEnabled = true
+            loading = false
+        }
     }
 
-    private String toFileNameString(final String name) {
-        return name.replaceAll("[\\\\/:*?\"<>|]", "_");
+    private fun selectSaveDirectory(title: String): File? {
+        val chooser = JFileChooser(currentDirectory).also {
+            it.fileSelectionMode = JFileChooser.DIRECTORIES_ONLY
+            it.dialogTitle = "「$title」の保存先フォルダを選択"
+        }
+        val selected = chooser.showSaveDialog(this)
+        return if (selected == JFileChooser.APPROVE_OPTION) chooser.selectedFile else null
     }
 
-    private void dumpAllDir(
-            ZipOutputStream zos,
-            MediaServer server) throws IOException {
-        try {
-            final String base = toFileNameString(server.getFriendlyName()) + "/cds";
-            final LinkedList<String> idList = new LinkedList<>();
-            int count = 1;
-            idList.addFirst("0");
-            while (idList.size() > 0 && !mCancel) {
-                final String id = idList.pollFirst();
-                final BrowseResult result = server.browse(id);
-                final List<CdsObject> objects = result.get();
-                if (objects == null) {
-                    continue;
-                }
-                for (CdsObject object : objects) {
-                    if (object.isContainer()) {
-                        idList.addLast(object.getObjectId());
-                        count++;
+    private fun saveDescription(
+        zos: ZipOutputStream,
+        server: MediaServer
+    ) {
+        val device = server.device
+        val base = toFileNameString(server.friendlyName) + "/description"
+        writeZipEntry(zos, makePath(base, device.friendlyName), device.description)
+        for (service in device.serviceList) {
+            writeZipEntry(zos, makePath(base, service.serviceId), service.description)
+        }
+    }
+
+    @Throws(IOException::class)
+    private fun makePath(
+        base: String,
+        name: String?
+    ): String = makeUniquePath(base + "/" + toFileNameString(name!!), ".xml")
+
+    @Throws(IOException::class)
+    private fun makePath(
+        base: String,
+        name: String?,
+        suffix: String
+    ): String = makeUniquePath(base + "/" + toFileNameString(name!!), "$suffix.xml")
+
+    @Throws(IOException::class)
+    private fun makeUniquePath(
+        body: String,
+        suffix: String
+    ): String {
+        val defaultPath = body + suffix
+        if (zipEntrySet.add(defaultPath)) {
+            return defaultPath
+        }
+        for (i in 0 until Integer.MAX_VALUE) {
+            val path = "$body$$$i$suffix"
+            if (zipEntrySet.add(path)) {
+                return path
+            }
+        }
+        throw IOException()
+    }
+
+    @Throws(IOException::class)
+    private fun writeZipEntry(
+        zos: ZipOutputStream,
+        path: String,
+        data: String
+    ) {
+        kotlin.runCatching {
+            zos.putNextEntry(ZipEntry(path))
+            zos.write(data.toByteArray(StandardCharsets.UTF_8))
+            zos.closeEntry()
+        }
+    }
+
+    private fun toFileNameString(name: String): String {
+        return name.replace("[\\\\/:*?\"<>|]".toRegex(), "_")
+    }
+
+    private fun dumpAllDir(
+        zos: ZipOutputStream,
+        server: MediaServer
+    ) {
+        val base = toFileNameString(server.friendlyName) + "/cds"
+        val idList = LinkedList<String>()
+        var count = 1
+        idList.addFirst("0")
+        while (!cancel) {
+            val id = idList.pollFirst() ?: return
+            server.browse(id)
+                .subscribeOn(Schedulers.trampoline())
+                .subscribe({ result ->
+                    result.list.forEach {
+                        if (it.isContainer) {
+                            idList.addLast(it.objectId)
+                            count++
+                        }
                     }
-                }
-                mText.setText((count - idList.size()) + "/" + count);
-                final List<Description> descriptions = result.getDescriptionList();
-                for (Description description : descriptions) {
-                    int start = description.getStart();
-                    int end = description.getNumber() + start - 1;
-                    if (descriptions.size() == 1) {
-                        writeZipEntry(zos, makePath(base, id), description.getXml());
+                    textField.text = (count - idList.size).toString() + "/" + count
+                    val start = result.start
+                    val end = start + result.number - 1
+                    if (start == 0 && result.number == result.total) {
+                        writeZipEntry(zos, makePath(base, id), result.description)
                     } else {
-                        writeZipEntry(zos, makePath(base, id, "(" + start + "-" + end + ")"), description.getXml());
+                        writeZipEntry(zos, makePath(base, id, "(${start}-${end})"), result.description)
                     }
-                }
-            }
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
+                }, {})
+        }
+    }
+
+    companion object {
+        @JvmStatic
+        fun main(args: Array<String>) {
+            Logger.setLogLevel(Logger.VERBOSE)
+            Logger.setSender(Senders.create())
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName())
+            MainWindow()
         }
     }
 }
